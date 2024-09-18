@@ -30,11 +30,6 @@ fun NoteDetailScreen(
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Edit Note") }) },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { onDelete() }) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete Note")
-            }
-        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -61,7 +56,11 @@ fun NoteDetailScreen(
             )
             Spacer(Modifier.height(16.dp))
             Button(
-                onClick = { onSave(title, content) },
+                onClick = {
+                    if (title.isNotBlank() || content.isNotBlank()) {
+                        onSave(title, content)
+                    }
+                },
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text("Save")

@@ -24,8 +24,9 @@ fun NavGraph(startDestination: String = Screen.NotesList.route, viewModel: Notes
         composable(route = Screen.NotesList.route) {
             NotesListScreen(
                 notes = viewModel.notes,
-                onAdd = { title, content ->
-                    viewModel.addNote(title, content)
+                onAdd = {
+                    val newNoteId = viewModel.createNewNote()
+                    navController.navigate(Screen.NoteDetail.createRoute(newNoteId))
                 },
                 onDelete = { id ->
                     viewModel.deleteNote(id)

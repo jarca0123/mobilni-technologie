@@ -20,6 +20,12 @@ class NotesViewModel : ViewModel() {
         }
     }
 
+    fun createNewNote(): Int {
+        val newNote = Note(id = nextId++, title = "", content = "")
+        _notes.add(newNote)
+        return newNote.id
+    }
+
     fun deleteNote(id: Int) {
         _notes.removeAll { it.id == id }
     }

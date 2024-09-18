@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +21,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,16 +33,15 @@ import com.example.myapplication.model.Note
 @Composable
 fun NotesListScreen(
     notes: List<Note>,
-    onAdd: (String, String) -> Unit,
+    onAdd: () -> Unit,
     onDelete: (Int) -> Unit,
     onNoteClick: (Int) -> Unit
 ) {
-    var showDialog by remember { mutableStateOf(false) }
-
+    var noteToDelete by remember { mutableStateOf<Int?>(null) }
     Scaffold(
         topBar = { TopAppBar(title = { Text("My Notes") }) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
+            FloatingActionButton(onClick = { onAdd() }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Note")
             }
         }
@@ -59,23 +60,42 @@ fun NotesListScreen(
                     contentPadding = PaddingValues(16.dp)
                 ) {
                     items(notes) { note ->
-                        NoteItem(note = note, onClick = { onNoteClick(note.id) }, onDelete = { onDelete(note.id) })
-                        Divider()
+                        NoteItem(note = note, onClick = { onNoteClick(note.id) }, onDelete = { noteToDelete = note.id })
+                        HorizontalDivider()
                     }
                 }
             }
-
-            if (showDialog) {
-                AddNoteDialog(
-                    onAdd = { title, content ->
-                        onAdd(title, content)
-                        showDialog = false
+            if (noteToDelete != null) {
+                DeleteConfirmationDialog(
+                    onConfirm = {
+                        onDelete(noteToDelete!!)
+                        noteToDelete = null
                     },
-                    onDismiss = { showDialog = false }
+                    onDismiss = { noteToDelete = null },
+                    message = "Are you sure you want to delete this note?"
                 )
             }
         }
     }
+}
+
+@Composable
+fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit, message: String) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete Note") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Delete")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
@@ -95,49 +115,4 @@ fun NoteItem(note: Note, onClick: () -> Unit, onDelete: () -> Unit) {
             Icon(Icons.Default.Delete, contentDescription = "Delete Note")
         }
     }
-}
-
-@Composable
-fun AddNoteDialog(onAdd: (String, String) -> Unit, onDismiss: () -> Unit) {
-    var title by remember { mutableStateOf("") }
-    var content by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add New Note") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text("Content") },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 5
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (title.isNotBlank()) {
-                        onAdd(title, content)
-                    }
-                }
-            ) {
-                Text("Add")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }

@@ -39,7 +39,7 @@ fun NavGraph(startDestination: String = Screen.NotesList.route, viewModel: Notes
     val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-    val notes by viewModel.notes.collectAsState(initial = emptyList())
+    val notes by viewModel.filteredAndSortedNotes!!.collectAsState(initial = emptyList())
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri: Uri? ->
@@ -81,6 +81,14 @@ fun NavGraph(startDestination: String = Screen.NotesList.route, viewModel: Notes
                 },
                 onExport = {  ->
                     exportLauncher.launch("notes_export_${System.currentTimeMillis()}.json")
+                },
+                searchQuery = viewModel.searchQuery.collectAsState().value,
+                onSearchQueryChange = { query ->
+                    viewModel.updateSearchQuery(query)
+                },
+                sortOption = viewModel.sortOption.collectAsState().value,
+                onSortOptionChange = { sortOption ->
+                    viewModel.updateSortOption(sortOption)
                 }
             )
         }

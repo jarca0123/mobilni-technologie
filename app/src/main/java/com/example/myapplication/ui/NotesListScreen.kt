@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -22,6 +23,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,10 +31,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.res.ResourcesCompat.getDrawable
+import com.example.myapplication.R
 import com.example.myapplication.data.Note
 import com.example.myapplication.util.JsonConverter
+import com.example.myapplication.util.SortBy
+import com.example.myapplication.util.SortOption
+import com.example.myapplication.util.SortOrder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,38 +52,90 @@ fun NotesListScreen(
     onDelete: (Note) -> Unit,
     onNoteClick: (Note) -> Unit,
     onImport: (List<Note>) -> Unit,
-    onExport: () -> Unit
+    onExport: () -> Unit,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    sortOption: SortOption,
+    onSortOptionChange: (SortOption) -> Unit
 ) {
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
-    var expanded by remember { mutableStateOf(false) }
+    var expandedMenu by remember { mutableStateOf(false) }
+    var expandedSortMenu by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("My Notes") },
-                actions = {
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Options")
+            Column {
+                // Search Bar
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { onSearchQueryChange(it) },
+                    label = { Text("Search") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                )
+                TopAppBar(
+                    title = { Text("My Notes") },
+                    actions = {
+                        // Sorting Button
+                        IconButton(onClick = { expandedSortMenu = true }) {
+                            Icon(ImageVector.vectorResource(R.drawable.filter_list_24px), contentDescription = "Sort")
+                        }
+                        DropdownMenu(
+                            expanded = expandedSortMenu,
+                            onDismissRequest = { expandedSortMenu = false }
+                        ) {
+                            DropdownMenuItem(onClick = {
+                                onSortOptionChange(SortOption(SortBy.ID, SortOrder.ASCENDING))
+                                expandedSortMenu = false
+                            }, text = { Text("ID Ascending") })
+                            DropdownMenuItem(onClick = {
+                                onSortOptionChange(SortOption(SortBy.ID, SortOrder.DESCENDING))
+                                expandedSortMenu = false
+                            }, text = { Text("ID Descending") })
+                            DropdownMenuItem(onClick = {
+                                onSortOptionChange(SortOption(SortBy.TITLE, SortOrder.ASCENDING))
+                                expandedSortMenu = false
+                            }, text = { Text("Title Ascending") })
+                            DropdownMenuItem(onClick = {
+                                onSortOptionChange(SortOption(SortBy.TITLE, SortOrder.DESCENDING))
+                                expandedSortMenu = false
+                            }, text = { Text("Title Descending") })
+                            DropdownMenuItem(onClick = {
+                                onSortOptionChange(SortOption(SortBy.CONTENT, SortOrder.ASCENDING))
+                                expandedSortMenu = false
+                            }, text = { Text("Content Ascending") })
+                            DropdownMenuItem(onClick = {
+                                onSortOptionChange(SortOption(SortBy.CONTENT, SortOrder.DESCENDING))
+                                expandedSortMenu = false
+                            }, text = { Text("Content Descending") })
+                        }
+
+                        // Three-Dotted Options Menu
+                        IconButton(onClick = { expandedMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Options")
+                        }
+                        DropdownMenu(
+                            expanded = expandedMenu,
+                            onDismissRequest = { expandedMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                onClick = {
+                                    expandedMenu = false
+                                    importLauncher.launch(arrayOf("application/json"))
+                                }, text = { Text("Import from JSON") }
+                            )
+                            DropdownMenuItem(
+                                onClick = {
+                                    expandedMenu = false
+                                    onExport()
+                                }, text = { Text("Export to JSON") }
+                            )
+                        }
                     }
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            onClick = {
-                                expanded = false
-                                importLauncher.launch(arrayOf("application/json"))
-                            }, text = { Text("Import from JSON") }
-                        )
-                        DropdownMenuItem(
-                            onClick = {
-                                expanded = false
-                                onExport()
-                            }, text = { Text("Export to JSON") }
-                        )
-                    }
-                }
-            )
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { onAdd() }) {

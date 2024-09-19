@@ -55,7 +55,9 @@ dependencies {
 
     implementation("androidx.room:room-runtime:$room_version")
     ksp("androidx.room:room-compiler:$room_version")
-
+    val appcompat_version = "1.7.0"
+    implementation("androidx.core:core-splashscreen:1.0.0")
+    implementation("androidx.appcompat:appcompat:$appcompat_version")
     // optional - Kotlin Extensions and Coroutines support for Room
     implementation("androidx.room:room-ktx:$room_version")
     implementation(libs.androidx.core.ktx)

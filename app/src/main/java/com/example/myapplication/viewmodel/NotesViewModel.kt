@@ -1,36 +1,70 @@
 package com.example.myapplication.viewmodel
 
-import androidx.compose.runtime.mutableStateListOf
-import androidx.lifecycle.ViewModel
-import com.example.myapplication.model.Note
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.myapplication.data.Note
+import com.example.myapplication.data.NoteDatabase
+import com.example.myapplication.data.NoteRepository
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
-class NotesViewModel : ViewModel() {
-    private val _notes = mutableStateListOf<Note>()
-    val notes: List<Note> get() = _notes
-    private var nextId = 1
+class NotesViewModel(application: Application) : AndroidViewModel(application) {
 
-    fun addNote(title: String, content: String) {
-        _notes.add(Note(id = nextId++, title = title, content = content))
-    }
+    private val repository: NoteRepository
 
-    fun updateNote(id: Int, title: String, content: String) {
-        val index = _notes.indexOfFirst { it.id == id }
-        if (index != -1) {
-            _notes[index] = _notes[index].copy(title = title, content = content)
+    // Exposed notes as StateFlow for Compose
+    private val _notes = MutableStateFlow<List<Note>>(emptyList())
+    val notes: StateFlow<List<Note>> = _notes
+
+    init {
+        // Initialize the repository
+        val noteDao = NoteDatabase.getDatabase(application).noteDao()
+        repository = NoteRepository(noteDao)
+
+        // Collect all notes from repository and update _notes
+        viewModelScope.launch {
+            repository.allNotes.collect { noteList ->
+                _notes.value = noteList
+            }
         }
     }
 
-    fun createNewNote(): Int {
-        val newNote = Note(id = nextId++, title = "", content = "")
-        _notes.add(newNote)
-        return newNote.id
+    // Create a new empty note and return its ID
+    fun createNewNote(onNoteCreated: (Int) -> Unit) {
+        viewModelScope.launch {
+            val newNote = Note(title = "", content = "")
+            val id = repository.insert(newNote).toInt()
+            onNoteCreated(id)
+        }
     }
 
-    fun deleteNote(id: Int) {
-        _notes.removeAll { it.id == id }
+    // Update an existing note
+    fun updateNote(note: Note) {
+        viewModelScope.launch {
+            repository.update(note)
+        }
     }
 
-    fun getNoteById(id: Int): Note? {
-        return _notes.find { it.id == id }
+    // Delete a note
+    fun deleteNote(note: Note) {
+        viewModelScope.launch {
+            repository.delete(note)
+        }
+    }
+
+    // Import notes (replace existing notes)
+    fun importNotes(importedNotes: List<Note>) {
+        viewModelScope.launch {
+            repository.deleteAllNotes()
+            importedNotes.forEach { note ->
+                repository.insert(note)
+            }
+        }
+    }
+
+    // Export notes to retrieve current list
+    fun getAllNotes(): List<Note> {
+        return _notes.value
     }
 }
